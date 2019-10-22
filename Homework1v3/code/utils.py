@@ -120,6 +120,7 @@ def buildDict(train_images, dict_size, feature_type, clustering_type):
     # number of descriptors you store per image.
 
     print(feature_type)
+    print(clustering_type)
     descriptors = []
     if feature_type == "sift":
         sift = cv2.xfeatures2d.SIFT_create(nfeatures=25)
@@ -138,14 +139,20 @@ def buildDict(train_images, dict_size, feature_type, clustering_type):
             kp, d = orb.detectAndCompute(image, None)
             descriptors.append(d)
 
+    vocabulary = []
     descriptors = np.vstack(descriptors)
-    print(clustering_type)
     if clustering_type == "kmeans":
         clust = cluster.KMeans(n_clusters=dict_size, random_state=None).fit(descriptors)
+        vocabulary = clust.cluster_centers_
     else: # hierarchal
         clust = cluster.AgglomerativeClustering(n_clusters=dict_size).fit(descriptors)
+        for d in descriptors:
+            # sum the columns based on @142 on Piazza
+            sum_down_cols = np.sum(d, axis=0)
+            rows = len(d)
+            avg = np.true_divide(sum_down_cols, rows)
 
-    vocabulary = clust.cluster_centers_
+            vocabulary.append(avg)
 
     return vocabulary
 
