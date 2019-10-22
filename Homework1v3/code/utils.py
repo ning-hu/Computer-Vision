@@ -1,4 +1,5 @@
 import os
+import random
 import cv2
 import numpy as np
 import timeit, time
@@ -117,6 +118,35 @@ def buildDict(train_images, dict_size, feature_type, clustering_type):
 
     # NOTE: Should you run out of memory or have performance issues, feel free to limit the 
     # number of descriptors you store per image.
+
+    print(feature_type)
+    descriptors = []
+    if feature_type == "sift":
+        sift = cv2.xfeatures2d.SIFT_create(nfeatures=25)
+        for image in train_images:
+            kp, d = sift.detectAndCompute(image, None)
+            descriptors.append(d)
+    elif feature_type == "surf":
+        surf = cv2.SURF()
+        for image in train_images:
+            kp, d = surf.detectAndCompute(image, None)
+            descriptors.append(d)
+        descriptors = random.sample(descriptors, 25)
+    else: # orb
+        orb = cv2.ORB(nfeatures=25)
+        for image in train_images:
+            kp, d = orb.detectAndCompute(image, None)
+            descriptors.append(d)
+
+    descriptors = np.vstack(descriptors)
+    print(clustering_type)
+    if clustering_type == "kmeans":
+        clust = cluster.KMeans(n_clusters=dict_size, random_state=None).fit(descriptors)
+    else: # hierarchal
+        clust = cluster.AgglomerativeClustering(n_clusters=dict_size).fit(descriptors)
+
+    vocabulary = clust.cluster_centers_
+
     return vocabulary
 
 
