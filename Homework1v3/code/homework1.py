@@ -80,16 +80,17 @@ if __name__ == "__main__":
     
     # You need to write ComputeBow()
     for i, vocab in enumerate(vocabularies):
-        for image in train_images: # Compute the BOW representation of the training set
-            rep = computeBow(image, vocab, features[i]) # Rep is a list of descriptors for a given image
-            train_rep.append(rep)
-        np.save(SAVEPATH + 'bow_train_' + str(i) + '.npy', np.asarray(train_rep)) # Save the representations for vocabulary i
+        if not os.path.exists(SAVEPATH + 'bow_train_' + str(i) + '.npy'):
+            for image in train_images: # Compute the BOW representation of the training set
+                rep = computeBow(image, vocab, features[i]) # Rep is a list of descriptors for a given image
+                train_rep.append(rep)
+            np.save(SAVEPATH + 'bow_train_' + str(i) + '.npy', np.asarray(train_rep)) # Save the representations for vocabulary i
         train_rep = [] # reset the list to save the following vocabulary
-        for image in test_images: # Compute the BOW representation of the testing set
-            rep = computeBow(image, vocab, features[i])
-            test_rep.append(rep)
-        np.save(SAVEPATH + 'bow_test_' + str(i) + '.npy', np.asarray(test_rep)) # Save the representations for vocabulary i
-        train_rep = [] # reset the list to save the following vocabulary
+        if not os.path.exists(SAVEPATH + 'bow_test_' + str(i) + '.npy'):
+            for image in test_images: # Compute the BOW representation of the testing set
+                rep = computeBow(image, vocab, features[i])
+                test_rep.append(rep)
+            np.save(SAVEPATH + 'bow_test_' + str(i) + '.npy', np.asarray(test_rep)) # Save the representations for vocabulary i
         test_rep = [] # reset the list to save the following vocabulary
         
     

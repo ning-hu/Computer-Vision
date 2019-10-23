@@ -5,6 +5,7 @@ import numpy as np
 import timeit, time
 from sklearn import neighbors, svm, cluster, preprocessing, metrics
 from collections import defaultdict
+from scipy.spatial import distance
 
 
 def load_data():
@@ -174,6 +175,26 @@ def computeBow(image, vocabulary, feature_type):
     # vocabulary is an array of size dict_size x d
     # feature type is a string (from "sift", "surf", "orb") specifying the feature
     # used to create the vocabulary
+
+    # Get descriptors for the image
+    descriptors = []
+    if feature_type == "sift":
+        sift = cv2.xfeatures2d.SIFT_create(nfeatures=25)
+        kp, descriptors = sift.detectAndCompute(image, None)
+    elif feature_type == "surf":
+        surf = cv2.xfeatures2d.SURF_create()
+        kp, descriptors = surf.detectAndCompute(image, None)
+        descriptors = random.sample(descriptors, 25)
+    else: # orb
+        orb = cv2.ORB_create(nfeatures=25)
+        kp, descriptors = orb.detectAndCompute(image, None)
+        if descriptors is None:
+            descriptors = np.zeros(128)
+
+    dists = distance.cdist(descriptors, vocabulary, 'euclidean')
+    image_bins = np.argmin(dists, axis=1)
+    
+    Bow = np.histogram(image_bins, bins=np.arange(vocabulary.shape[0]), density=True)
 
     # BOW is the new image representation, a normalized histogram
     return Bow
