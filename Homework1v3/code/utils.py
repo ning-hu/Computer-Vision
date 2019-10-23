@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import timeit, time
 from sklearn import neighbors, svm, cluster, preprocessing, metrics
+from collections import defaultdict
 
 
 def load_data():
@@ -119,8 +120,6 @@ def buildDict(train_images, dict_size, feature_type, clustering_type):
     # NOTE: Should you run out of memory or have performance issues, feel free to limit the 
     # number of descriptors you store per image.
 
-    print(feature_type)
-    print(clustering_type)
     descriptors = []
     if feature_type == "sift":
         sift = cv2.xfeatures2d.SIFT_create(nfeatures=25)
@@ -128,15 +127,17 @@ def buildDict(train_images, dict_size, feature_type, clustering_type):
             kp, d = sift.detectAndCompute(image, None)
             descriptors.append(d)
     elif feature_type == "surf":
-        surf = cv2.SURF()
+        surf = cv2.xfeatures2d.SURF_create()
         for image in train_images:
             kp, d = surf.detectAndCompute(image, None)
             descriptors.append(d)
         descriptors = random.sample(descriptors, 25)
     else: # orb
-        orb = cv2.ORB(nfeatures=25)
+        orb = cv2.ORB_create(nfeatures=25)
         for image in train_images:
             kp, d = orb.detectAndCompute(image, None)
+            if d is None:
+                continue
             descriptors.append(d)
 
     vocabulary = []
@@ -146,9 +147,18 @@ def buildDict(train_images, dict_size, feature_type, clustering_type):
         vocabulary = clust.cluster_centers_
     else: # hierarchal
         clust = cluster.AgglomerativeClustering(n_clusters=dict_size).fit(descriptors)
-        for d in descriptors:
-            # sum the columns based on @142 on Piazza
+        labels = clust.labels_
+
+        # Make a dictionary where key = label and value = array of descriptors
+        dictionary = defaultdict(list)
+        for k, v in zip(labels, descriptors):
+            dictionary[k].append(v)
+        descriptor_dict = dict(dictionary)
+
+        for d in descriptor_dict.values():
+            # Sum the columns based on @142 on Piazza
             sum_down_cols = np.sum(d, axis=0)
+            # Normalize based on number of descriptors for a given label
             rows = len(d)
             avg = np.true_divide(sum_down_cols, rows)
 

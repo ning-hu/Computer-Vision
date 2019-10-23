@@ -30,10 +30,12 @@ if __name__ == "__main__":
     # Load data, the function is written for you in utils
     train_images, test_images, train_labels, test_labels = load_data()
     
-    if args.tiny:
+    # Don't run this if the output from a previous run was already saved
+    if args.tiny and not os.path.exists(SAVEPATH + 'tiny_acc.npy') or not os.path.exists(SAVEPATH + 'tiny_time.npy'):
+        print("Running tiny images")
+
         # You have to write the tinyImages function
         tinyRes = tinyImages(train_images, test_images, train_labels, test_labels)
-        print(tinyRes)
     
         # Split accuracies and runtimes for saving  
         for element in tinyRes[::2]:
@@ -45,6 +47,8 @@ if __name__ == "__main__":
         # Save results
         np.save(SAVEPATH + 'tiny_acc.npy', acc)
         np.save(SAVEPATH + 'tiny_time.npy', runtime)
+    else:
+        print("Skipping tiny images")
 
     # Create vocabularies, and save them in the result directory
     # You need to write the buildDict function
@@ -56,9 +60,15 @@ if __name__ == "__main__":
     for feature in ['sift', 'surf', 'orb']:
         for algo in ['kmeans', 'hierarchical']:
             for dict_size in [20, 50]:
-                vocabulary = buildDict(train_images, dict_size, feature, algo)
+                # Don't re-run if a dictionary has already been made
                 filename = 'voc_' + feature + '_' + algo + '_' + str(dict_size) + '.npy'
-                np.save(SAVEPATH + filename, np.asarray(vocabulary))
+                if not os.path.exists(SAVEPATH + filename):
+                    print("Building a dictionary for {}".format(filename))
+                    vocabulary = buildDict(train_images, dict_size, feature, algo)
+                    np.save(SAVEPATH + filename, np.asarray(vocabulary))
+                else:
+                    print("Using a pre-created dictionary for {}".format(filename))
+                    vocabulary = np.load(SAVEPATH + filename)
                 vocabularies.append(vocabulary) # A list of vocabularies (which are 2D arrays)
                 vocab_idx.append(filename.split('.')[0]) # Save the map from index to vocabulary
                 
