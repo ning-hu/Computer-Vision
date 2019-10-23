@@ -132,7 +132,7 @@ def buildDict(train_images, dict_size, feature_type, clustering_type):
         for image in train_images:
             kp, d = surf.detectAndCompute(image, None)
             descriptors.append(d)
-        descriptors = random.sample(descriptors, 25)
+        descriptors = random.sample(descriptors.tolist(), min(len(descriptors.tolist()), 25))
     else: # orb
         orb = cv2.ORB_create(nfeatures=25)
         for image in train_images:
@@ -180,20 +180,24 @@ def computeBow(image, vocabulary, feature_type):
     descriptors = []
     if feature_type == "sift":
         sift = cv2.xfeatures2d.SIFT_create(nfeatures=25)
-        kp, descriptors = sift.detectAndCompute(image, None)
+        kp, d = sift.detectAndCompute(image, None)
+        descriptors = d
     elif feature_type == "surf":
         surf = cv2.xfeatures2d.SURF_create()
-        kp, descriptors = surf.detectAndCompute(image, None)
-        descriptors = random.sample(descriptors, 25)
+        kp, d = surf.detectAndCompute(image, None)
+        descriptors = random.sample(d.tolist(), min(len(d.tolist()), 25))
     else: # orb
         orb = cv2.ORB_create(nfeatures=25)
-        kp, descriptors = orb.detectAndCompute(image, None)
-        if descriptors is None:
-            descriptors = np.zeros(128)
+        kp, d = orb.detectAndCompute(image, None)
+        print(d)
+        if d is None:
+            descriptors.append(np.zeros(vocabulary.shape[1]))
+        else:
+            descriptors = d
 
     dists = distance.cdist(descriptors, vocabulary, 'euclidean')
     image_bins = np.argmin(dists, axis=1)
-    
+
     Bow = np.histogram(image_bins, bins=np.arange(vocabulary.shape[0]), density=True)
 
     # BOW is the new image representation, a normalized histogram

@@ -1,5 +1,6 @@
 from utils import *
 import argparse
+from sklearn.feature_extraction.text import CountVectorizer
 
 parser = argparse.ArgumentParser(description='CS188.2 - Fall 19 - Homework 1')
 parser.add_argument("--tiny", "-t", type=bool, default=True, help='run Tiny Images')
@@ -81,18 +82,23 @@ if __name__ == "__main__":
     # You need to write ComputeBow()
     for i, vocab in enumerate(vocabularies):
         if not os.path.exists(SAVEPATH + 'bow_train_' + str(i) + '.npy'):
+            print("Running bow for {}".format(SAVEPATH + 'bow_train_' + str(i) + '.npy'))
             for image in train_images: # Compute the BOW representation of the training set
                 rep = computeBow(image, vocab, features[i]) # Rep is a list of descriptors for a given image
                 train_rep.append(rep)
             np.save(SAVEPATH + 'bow_train_' + str(i) + '.npy', np.asarray(train_rep)) # Save the representations for vocabulary i
+        else:
+            print("Using a pre-existing bow for {}".format(SAVEPATH + 'bow_train_' + str(i) + '.npy'))
         train_rep = [] # reset the list to save the following vocabulary
         if not os.path.exists(SAVEPATH + 'bow_test_' + str(i) + '.npy'):
+            print("Running bow for {}".format(SAVEPATH + 'bow_test_' + str(i) + '.npy'))
             for image in test_images: # Compute the BOW representation of the testing set
                 rep = computeBow(image, vocab, features[i])
                 test_rep.append(rep)
             np.save(SAVEPATH + 'bow_test_' + str(i) + '.npy', np.asarray(test_rep)) # Save the representations for vocabulary i
+        else:
+            print("Using a pre-existing bow for {}".format(SAVEPATH + 'bow_test_' + str(i) + '.npy'))
         test_rep = [] # reset the list to save the following vocabulary
-        
     
     # Use BOW features to classify the images with a KNN classifier
     # A list to store the accuracies and one for runtimes
@@ -100,8 +106,21 @@ if __name__ == "__main__":
     knn_runtimes = []
 
     # Your code below, eg:
-    # for i, vocab in enumerate(vocabularies):
-    # ... 
+    for i, vocab in enumerate(vocabularies):
+        print("Running KNN on {}".format(vocab_idx[i]))
+        train = np.load(SAVEPATH + 'bow_train_' + str(i) + '.npy')
+        test = np.load(SAVEPATH + 'bow_test_' + str(i) + '.npy')
+
+        bow_vectorizer = CountVectorizer(max_features=100, stop_words='english')
+
+        start = timeit.default_timer()
+        predictions = KNN_classifier(train, train_labels, test, 9)
+        stop = timeit.default_timer()
+        time = stop - start
+
+        accuracy = reportAccuracy(test_labels, predictions)
+        knn_accuracies.append(accuracy)
+        knn_runtimes.append(time)
     
     np.save(SAVEPATH+'knn_accuracies.npy', np.asarray(knn_accuracies)) # Save the accuracies in the Results/ directory
     np.save(SAVEPATH+'knn_runtimes.npy', np.asarray(knn_runtimes)) # Save the runtimes in the Results/ directory
