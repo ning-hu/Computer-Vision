@@ -30,7 +30,7 @@ if __name__ == "__main__":
     
     # Load data, the function is written for you in utils
     train_images, test_images, train_labels, test_labels = load_data()
-    
+
     # Don't run this if the output from a previous run was already saved
     if args.tiny and not os.path.exists(SAVEPATH + 'tiny_acc.npy') or not os.path.exists(SAVEPATH + 'tiny_time.npy'):
         print("Running tiny images")
@@ -82,22 +82,23 @@ if __name__ == "__main__":
     # You need to write ComputeBow()
     for i, vocab in enumerate(vocabularies):
         if not os.path.exists(SAVEPATH + 'bow_train_' + str(i) + '.npy'):
-            print("Running bow for {}".format(SAVEPATH + 'bow_train_' + str(i) + '.npy'))
+            print("Running bow for {} with {}".format(vocab_idx[i] + ' bow_train_' + str(i) + '.npy', vocab_idx[i]))
             for image in train_images: # Compute the BOW representation of the training set
                 rep = computeBow(image, vocab, features[i]) # Rep is a list of descriptors for a given image
                 train_rep.append(rep)
             np.save(SAVEPATH + 'bow_train_' + str(i) + '.npy', np.asarray(train_rep)) # Save the representations for vocabulary i
         else:
-            print("Using a pre-existing bow for {}".format(SAVEPATH + 'bow_train_' + str(i) + '.npy'))
+            print("Using a pre-existing bow for {} with {}".format(SAVEPATH + 'bow_train_' + str(i) + '.npy', vocab_idx[i]))
         train_rep = [] # reset the list to save the following vocabulary
+
         if not os.path.exists(SAVEPATH + 'bow_test_' + str(i) + '.npy'):
-            print("Running bow for {}".format(SAVEPATH + 'bow_test_' + str(i) + '.npy'))
+            print("Running bow for {} with {}".format(vocab_idx[i] + ' bow_test_' + str(i) + '.npy', vocab_idx[i]))
             for image in test_images: # Compute the BOW representation of the testing set
                 rep = computeBow(image, vocab, features[i])
                 test_rep.append(rep)
             np.save(SAVEPATH + 'bow_test_' + str(i) + '.npy', np.asarray(test_rep)) # Save the representations for vocabulary i
         else:
-            print("Using a pre-existing bow for {}".format(SAVEPATH + 'bow_test_' + str(i) + '.npy'))
+            print("Using a pre-existing bow for {} with {}".format(SAVEPATH + 'bow_test_' + str(i) + '.npy', vocab_idx[i]))
         test_rep = [] # reset the list to save the following vocabulary
     
     # Use BOW features to classify the images with a KNN classifier
@@ -110,8 +111,6 @@ if __name__ == "__main__":
         print("Running KNN on {}".format(vocab_idx[i]))
         train = np.load(SAVEPATH + 'bow_train_' + str(i) + '.npy')
         test = np.load(SAVEPATH + 'bow_test_' + str(i) + '.npy')
-
-        bow_vectorizer = CountVectorizer(max_features=100, stop_words='english')
 
         start = timeit.default_timer()
         predictions = KNN_classifier(train, train_labels, test, 9)

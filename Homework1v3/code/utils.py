@@ -7,6 +7,7 @@ from sklearn import neighbors, svm, cluster, preprocessing, metrics
 from collections import defaultdict
 from scipy.spatial import distance
 
+random.seed(1234)
 
 def load_data():
     test_path = '../data/test/'
@@ -125,18 +126,18 @@ def buildDict(train_images, dict_size, feature_type, clustering_type):
     if feature_type == "sift":
         sift = cv2.xfeatures2d.SIFT_create(nfeatures=25)
         for image in train_images:
-            kp, d = sift.detectAndCompute(image, None)
+            _, d = sift.detectAndCompute(image, None)
             descriptors.append(d)
     elif feature_type == "surf":
         surf = cv2.xfeatures2d.SURF_create()
         for image in train_images:
-            kp, d = surf.detectAndCompute(image, None)
+            _, d = surf.detectAndCompute(image, None)
             descriptors.append(d)
-        descriptors = random.sample(descriptors.tolist(), min(len(descriptors.tolist()), 25))
+        descriptors = random.sample(descriptors, 25)
     else: # orb
         orb = cv2.ORB_create(nfeatures=25)
         for image in train_images:
-            kp, d = orb.detectAndCompute(image, None)
+            _, d = orb.detectAndCompute(image, None)
             if d is None:
                 continue
             descriptors.append(d)
@@ -146,7 +147,7 @@ def buildDict(train_images, dict_size, feature_type, clustering_type):
     if clustering_type == "kmeans":
         clust = cluster.KMeans(n_clusters=dict_size, random_state=None).fit(descriptors)
         vocabulary = clust.cluster_centers_
-    else: # hierarchal
+    else: # hierarchical
         clust = cluster.AgglomerativeClustering(n_clusters=dict_size).fit(descriptors)
         labels = clust.labels_
 
@@ -179,17 +180,16 @@ def computeBow(image, vocabulary, feature_type):
     # Get descriptors for the image
     descriptors = []
     if feature_type == "sift":
-        sift = cv2.xfeatures2d.SIFT_create(nfeatures=25)
-        kp, d = sift.detectAndCompute(image, None)
+        sift = cv2.xfeatures2d.SIFT_create()
+        _, d = sift.detectAndCompute(image, None)
         descriptors = d
     elif feature_type == "surf":
         surf = cv2.xfeatures2d.SURF_create()
-        kp, d = surf.detectAndCompute(image, None)
-        descriptors = random.sample(d.tolist(), min(len(d.tolist()), 25))
+        _, d = surf.detectAndCompute(image, None)
+        descriptors = d
     else: # orb
-        orb = cv2.ORB_create(nfeatures=25)
-        kp, d = orb.detectAndCompute(image, None)
-        print(d)
+        orb = cv2.ORB_create()
+        _, d = orb.detectAndCompute(image, None)
         if d is None:
             descriptors.append(np.zeros(vocabulary.shape[1]))
         else:
@@ -198,7 +198,7 @@ def computeBow(image, vocabulary, feature_type):
     dists = distance.cdist(descriptors, vocabulary, 'euclidean')
     image_bins = np.argmin(dists, axis=1)
 
-    Bow = np.histogram(image_bins, bins=np.arange(vocabulary.shape[0]), density=True)
+    Bow, _ = np.histogram(image_bins, bins=np.arange(vocabulary.shape[0] + 1), density=True)
 
     # BOW is the new image representation, a normalized histogram
     return Bow
