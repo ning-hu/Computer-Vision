@@ -1,13 +1,10 @@
 import os
-import random
 import cv2
 import numpy as np
 import timeit, time
 from sklearn import neighbors, svm, cluster, preprocessing, metrics
 from collections import defaultdict
 from scipy.spatial import distance
-
-random.seed(1234)
 
 def load_data():
     test_path = '../data/test/'
@@ -145,11 +142,12 @@ def buildDict(train_images, dict_size, feature_type, clustering_type):
             _, d = sift.detectAndCompute(image, None)
             descriptors.append(d)
     elif feature_type == "surf":
-        surf = cv2.xfeatures2d.SURF_create()
+        surf = cv2.xfeatures2d.SURF_create(hessianThreshold=8000)
         for image in train_images:
             _, d = surf.detectAndCompute(image, None)
-            descriptors.append(d)
-        descriptors = random.sample(descriptors, 25)
+            if d is None:
+                continue
+            descriptors.append(d)  
     else: # orb
         orb = cv2.ORB_create(nfeatures=25)
         for image in train_images:
@@ -255,7 +253,7 @@ def tinyImages(train_features, test_features, train_labels, test_labels):
             classResult.append(accuracy)
             classResult.append(time)
 
-            print("Ran KNN on images of size {}x{} with accuracy {}".format(size, size, accuracy))
+            print("Ran KNN on images of size {}x{} with a k of {} and got an accuracy of {}".format(size, size, k, accuracy))
 
 
     return classResult
